@@ -4,6 +4,8 @@ const express = require("express");
 const app = express();
 require("dotenv").config();
 
+app.use(cors()); // Adiciona o middleware CORS
+
 app.get("/adsdata-gender", async (req, res) => {
   // Obtenha os parâmetros de paginação da query string (ou use valores padrão)
   const page = parseInt(req.query.page) || 1; // Página atual (default = 1)
