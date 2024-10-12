@@ -3,6 +3,7 @@ const { JWT } = require("google-auth-library");
 const express = require("express");
 const app = express();
 require("dotenv").config();
+const cors = require("cors");
 
 app.use(cors()); // Adiciona o middleware CORS
 
