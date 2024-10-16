@@ -5,13 +5,15 @@ const app = express();
 require("dotenv").config();
 const cors = require("cors");
 
-app.use(cors()); // Adiciona o middleware CORS
+app.use(cors());
 
 app.get("/adsdata-gender", async (req, res) => {
-  // Obtenha os parâmetros de paginação da query string (ou use valores padrão)
-  const page = parseInt(req.query.page) || 1; // Página atual (default = 1)
-  const limit = parseInt(req.query.limit) || 10; // Número de itens por página (default = 10)
-  const offset = (page - 1) * limit; // Calcula o deslocamento para o slice dos dados
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = (page - 1) * limit;
+
+  const startDate = req.query.startDate ? new Date(req.query.startDate) : null;
+  const endDate = req.query.endDate ? new Date(req.query.endDate) : null;
 
   const serviceAccountAuth = new JWT({
     email: process.env.GOOGLE_SHEET_CLIENT_EMAIL,
@@ -38,13 +40,21 @@ app.get("/adsdata-gender", async (req, res) => {
     const headers = adsAgePageSheet.headerValues;
 
     // Transforma as linhas em um array de objetos simples
-    const items = rows.map((row) => {
+    let items = rows.map((row) => {
       let rowData = {};
       headers.forEach((header, index) => {
         rowData[header] = row._rawData[index]; // Extrai o valor da célula
       });
       return rowData;
     });
+
+    // Filtrar os itens por data, caso startDate e endDate sejam fornecidos
+    if (startDate && endDate) {
+      items = items.filter((item) => {
+        const itemDate = new Date(item["date_start"]); // Supondo que sua coluna de data se chame 'Date'
+        return itemDate >= startDate && itemDate <= endDate;
+      });
+    }
 
     // Pagina os resultados com base nos parâmetros page e limit
     const paginatedItems = items.slice(offset, offset + limit);
