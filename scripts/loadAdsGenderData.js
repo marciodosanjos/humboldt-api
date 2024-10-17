@@ -76,6 +76,7 @@ const writeAdsGenderData = async () => {
         console.log(
           `${googleSheetData.length} itens salvos para a data ${newDate}`
         );
+        process.exit(0);
       }
 
       if (googleSheetData.length === 0) {
@@ -117,6 +118,7 @@ const writeAdsGenderData = async () => {
             console.log(
               `Dados para o dia carregados com sucesso: ${formattedDate}`
             );
+            process.exit(0);
             break;
           }
         }
@@ -136,14 +138,14 @@ const writeAdsGenderData = async () => {
         return row.date_start === "01.01.2024";
       });
 
-      console.log(googleSheetData);
-
       //save the data on mongo db
       await AdsGenderData.create(googleSheetData);
       console.log("Dados carregados na db vazia com sucesso");
+      process.exit(0);
     }
   } catch (error) {
     console.error(error);
+    process.exit(1);
   }
 };
 
