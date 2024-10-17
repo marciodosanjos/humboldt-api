@@ -1,5 +1,11 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
+const moment = require("moment");
+
+// Função para converter a data de DD.MM.YYYY para YYYY-MM-DD
+function parseDate(dateString) {
+  return moment(dateString, "DD.MM.YYYY").toDate(); // Converte para objeto Date
+}
 
 const AdsGenderDataSchema = new Schema({
   ad_id: {
@@ -9,10 +15,12 @@ const AdsGenderDataSchema = new Schema({
   date_start: {
     required: true,
     type: Date,
+    set: (value) => parseDate(value), // Converte a string antes de salvar
   },
   date_stop: {
     required: true,
     type: Date,
+    set: (value) => parseDate(value), // Converte a string antes de salvar
   },
   ad_name: {
     required: true,
@@ -36,11 +44,11 @@ const AdsGenderDataSchema = new Schema({
   },
   spend: {
     required: true,
-    type: Number,
+    type: String,
   },
   frequency: {
     required: true,
-    type: Number,
+    type: String,
   },
   reach: {
     required: true,

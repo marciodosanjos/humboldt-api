@@ -5,6 +5,12 @@ const app = express();
 require("dotenv").config();
 const cors = require("cors");
 
+//mongoose
+const AdsGenderData = require("./Model/AdsGenderData.js");
+const dbConnect = require("./config/dbConnect");
+//db connect
+dbConnect();
+
 app.use(cors());
 
 app.get("/adsdata-gender", async (req, res) => {
@@ -70,6 +76,22 @@ app.get("/adsdata-gender", async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).send("An error occurred while fetching data");
+  }
+});
+
+//delete all data from AdsGenderData
+app.get("/delete", async (req, res) => {
+  try {
+    await AdsGenderData.deleteMany({});
+
+    res.json({
+      status: "Success",
+      message: "Data succefully deleted",
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).send("An error occurred while deleting data");
   }
 });
 

@@ -10,32 +10,6 @@ const cors = require("cors");
 //db connect
 dbConnect();
 
-const testData = {
-  adId: "2322",
-  dateStart: "2023-01-12",
-  dateStop: "2023-01-12",
-  adName: "Lorem",
-  adsetName: "Lorem",
-  campaignName: "Lorem",
-  objective: "Lorem",
-  optimizationGoal: "Lorem",
-  spend: 0,
-  frequency: 0,
-  reach: 0,
-  impressions: 0,
-  age: "Lorem",
-  gender: "Lorem",
-  linkClicks: 0,
-  postReaction: 0,
-  pageviewBr: 0,
-  pageviewLatam: 0,
-  comments: 0,
-  pageEngagement: 0,
-  postEngagement: 0,
-  shares: 0,
-  videoViews: 0,
-};
-
 const writeAdsGenderData = async () => {
   //get the data from google sheet
   const serviceAccountAuth = new JWT({
@@ -58,14 +32,14 @@ const writeAdsGenderData = async () => {
 
     //pegar data mais recente no mongo db
     const mostRecentRecord = await AdsGenderData.findOne()
-      .sort({ dateStart: -1 }) // Ordena pela data (decrescente)
+      .sort({ date_start: -1 }) // Ordena pela data (decrescente)
       .limit(1); // Limita a um resultado
 
     if (mostRecentRecord) {
       console.log(mostRecentRecord.date_start);
 
       // Extrai o dia, mês e ano da data
-      const day = mostRecentRecord.date_start.getDate() + 1; // Método correto para obter o dia
+      const day = mostRecentRecord.date_start.getDate() + 1; // Método correto para obter o dia e add um dia a mais
       const month = mostRecentRecord.date_start.getMonth() + 1; // Método correto para obter o mês (0-11)
       const year = mostRecentRecord.date_start.getFullYear(); // Obtém o ano
 
@@ -74,7 +48,7 @@ const writeAdsGenderData = async () => {
         .toString()
         .padStart(2, "0")}.${year}`;
 
-      console.log(newDate);
+      console.log(`Buscando dados para a data: ${newDate}`);
 
       // Transforma as linhas em um array de objetos simples
       let items = rows.map((row) => {
@@ -89,14 +63,84 @@ const writeAdsGenderData = async () => {
         return row.date_start === newDate;
       });
 
-      // console.log(googleSheetData);
+      if (googleSheetData.length > 0) {
+        console.log(
+          `Para a data ${newDate}, foram encontrados ${googleSheetData.length}`
+        );
+        //save the data on mongo db
+        console.log(
+          `Salvando ${googleSheetData.length} item para a data ${newDate}`
+        );
 
-      //   //save the data on mongo db
-      //   await AdsGenderData.create(googleSheetData);
-      //   console.log("Dados carregados com sucesso");
+        await AdsGenderData.create(googleSheetData);
+        console.log(
+          `${googleSheetData.length} itens salvos para a data ${newDate}`
+        );
+      }
+
+      if (googleSheetData.length === 0) {
+        console.log(`Para a data ${newDate}, nao foram encontrados registros`);
+        let incrementedDate = new Date(mostRecentRecord.date_start);
+        while (googleSheetData.length === 0) {
+          // Enquanto não encontrar dados na planilha, adicionar dias à data
+          console.log(`Adicionando um dia à data`);
+
+          // Incrementar o dia corretamente
+          incrementedDate.setDate(incrementedDate.getDate() + 1); // Adiciona um dia
+
+          // Extrair dia, mês e ano da variável incrementedDate (não newDate)
+          let day = incrementedDate.getDate();
+          let month = incrementedDate.getMonth() + 1; // Mês começa em 0
+          let year = incrementedDate.getFullYear();
+
+          // Formatar a data no formato DD.MM.YYYY
+          let formattedDate = `${day.toString().padStart(2, "0")}.${month
+            .toString()
+            .padStart(2, "0")}.${year}`;
+
+          console.log(`A nova data agora é: ${formattedDate}`);
+
+          // Filtrar novamente os dados da planilha para encontrar a nova data
+          const googleSheetData = items.filter(
+            (row) => row.date_start === formattedDate
+          );
+
+          if (googleSheetData.length === 0) {
+            console.log(`Nao há dados para a data: ${formattedDate}`);
+          }
+
+          // Se encontrar dados, salvar no MongoDB
+          if (googleSheetData.length > 0) {
+            console.log(`Encontramos dados para o dia: ${formattedDate}`);
+            console.log(googleSheetData[0]);
+            await AdsGenderData.create(googleSheetData);
+            console.log(
+              `Dados para o dia carregados com sucesso: ${formattedDate}`
+            );
+            break;
+          }
+        }
+      }
     } else {
       console.log("Nenhum registro encontrado no mongo db.");
-      return null;
+      // Transforma as linhas em um array de objetos simples
+      let items = rows.map((row) => {
+        let rowData = {};
+        headers.forEach((header, index) => {
+          rowData[header] = row._rawData[index]; // Extrai o valor da célula
+        });
+        return rowData;
+      });
+
+      const googleSheetData = items.filter((row, index) => {
+        return row.date_start === "01.01.2024";
+      });
+
+      console.log(googleSheetData);
+
+      //save the data on mongo db
+      await AdsGenderData.create(googleSheetData);
+      console.log("Dados carregados na db vazia com sucesso");
     }
   } catch (error) {
     console.error(error);

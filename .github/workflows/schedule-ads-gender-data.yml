@@ -1,0 +1,33 @@
+name: Run AdsGenderData Script Daily
+
+on:
+  schedule:
+    # Executa todos os dias às 15:00 (UTC)
+    - cron: "0 15 * * *"
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout do código
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Configurar o Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20.9.0" # ou a versão que seu projeto utiliza
+
+      # Step 3: Instalar dependências
+      - name: Install dependencies
+        run: npm install
+
+      # Step 4: Rodar o script
+      - name: Run AdsGenderData Script
+        env:
+          GOOGLE_SHEET_CLIENT_EMAIL: ${{ secrets.GOOGLE_SHEET_CLIENT_EMAIL }}
+          GOOGLE_SHEET_PRIVATE_KEY: ${{ secrets.GOOGLE_SHEET_PRIVATE_KEY }}
+          MONGO_URI: ${{ secrets.MONGO_URL }}
+        run: node scripts/loadAdsGenderData.js
