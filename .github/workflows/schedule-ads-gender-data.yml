@@ -1,6 +1,7 @@
 name: Run AdsGenderData Script Daily
 
 on:
+  workflow_dispatch:
   schedule:
     # Executa todos os dias às 15:00 (UTC)
     - cron: "0 15 * * *"
