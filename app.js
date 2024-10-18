@@ -1,9 +1,8 @@
-const { GoogleSpreadsheet } = require("google-spreadsheet");
-const { JWT } = require("google-auth-library");
 const express = require("express");
 const app = express();
 require("dotenv").config();
 const cors = require("cors");
+const moment = require("moment");
 
 //mongoose
 const AdsGenderData = require("./Model/AdsGenderData.js");
@@ -13,65 +12,41 @@ dbConnect();
 
 app.use(cors());
 
-app.get("/adsdata-gender", async (req, res) => {
+app.get("/adsgender", async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const offset = (page - 1) * limit;
 
-  const startDate = req.query.startDate ? new Date(req.query.startDate) : null;
-  const endDate = req.query.endDate ? new Date(req.query.endDate) : null;
+  // Função para converter a data recebida em um objeto Date
+  function parseDate(dateString) {
+    return moment(dateString, "YYYY-MM-DD").toDate(); // Converte para objeto Date no formato correto
+  }
 
-  const serviceAccountAuth = new JWT({
-    email: process.env.GOOGLE_SHEET_CLIENT_EMAIL,
-    key: process.env.GOOGLE_SHEET_PRIVATE_KEY.replace(/\\n/g, "\n"),
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-  });
+  // Converte a data de query para um objeto Date
+  const startDate = req.query.startDate ? parseDate(req.query.startDate) : null;
+  const endDate = req.query.endDate ? parseDate(req.query.endDate) : null;
 
-  const doc = new GoogleSpreadsheet(
-    "1JlicWF4OP7qgyRXDR7UFp3zpjigT3Lx9DrqjF-8IlsU",
-    serviceAccountAuth
-  );
+  // Construção da query para MongoDB
+  const query = {};
+  if (startDate && endDate) {
+    query.date_start = { $gte: startDate, $lte: endDate };
+  } else if (startDate) {
+    query.date_start = { $gte: startDate };
+  }
 
   try {
-    // Carrega informações da planilha
-    await doc.loadInfo();
+    // Busca os dados baseados na query de data
+    const data = await AdsGenderData.find(query).skip(offset).limit(limit);
 
-    // Seleciona a planilha
-    const adsAgePageSheet = doc.sheetsByIndex[4];
-
-    // Carrega as linhas da planilha
-    const rows = await adsAgePageSheet.getRows();
-
-    // Extrai os cabeçalhos das colunas (nomes das colunas)
-    const headers = adsAgePageSheet.headerValues;
-
-    // Transforma as linhas em um array de objetos simples
-    let items = rows.map((row) => {
-      let rowData = {};
-      headers.forEach((header, index) => {
-        rowData[header] = row._rawData[index]; // Extrai o valor da célula
-      });
-      return rowData;
-    });
-
-    // Filtrar os itens por data, caso startDate e endDate sejam fornecidos
-    if (startDate && endDate) {
-      items = items.filter((item) => {
-        const itemDate = new Date(item["date_start"]); // Supondo que sua coluna de data se chame 'Date'
-        return itemDate >= startDate && itemDate <= endDate;
-      });
-    }
-
-    // Pagina os resultados com base nos parâmetros page e limit
-    const paginatedItems = items.slice(offset, offset + limit);
-
-    // Retorna os resultados paginados e informações de paginação
+    // Retorna os dados e informações adicionais
     res.json({
       page,
       limit,
-      totalItems: items.length,
-      totalPages: Math.ceil(items.length / limit),
-      data: paginatedItems,
+      totalItems: data.length,
+      totalPages: Math.ceil(data.length / limit),
+      startDate,
+      endDate,
+      data,
     });
   } catch (error) {
     console.error(error);
