@@ -19,7 +19,7 @@ app.get("/adsgender", async (req, res) => {
 
   // Função para converter a data recebida em um objeto Date
   function parseDate(dateString) {
-    return moment(dateString, "YYYY-MM-DD").toDate(); // Converte para objeto Date no formato correto
+    return moment(dateString, "DD-MM-YYYY").toDate(); // Converte para objeto Date no formato correto
   }
 
   // Converte a data de query para um objeto Date
@@ -38,12 +38,26 @@ app.get("/adsgender", async (req, res) => {
     // Busca os dados baseados na query de data
     const data = await AdsGenderData.find(query).skip(offset).limit(limit);
 
+    const stats = await AdsGenderData.aggregate([
+      {
+        $match: query,
+      },
+      {
+        $group: {
+          _id: null,
+          sumReach: { $sum: "$reach" }, // Calcula o total do campo "reach"
+          sumImpressions: { $sum: "$impressions" }, // Calcula o total do campo "impressions"
+        },
+      },
+    ]);
+
     // Retorna os dados e informações adicionais
     res.json({
       page,
       limit,
       totalItems: data.length,
       totalPages: Math.ceil(data.length / limit),
+      stats,
       startDate,
       endDate,
       data,
