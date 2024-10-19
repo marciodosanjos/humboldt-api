@@ -14,5 +14,5 @@ const dbConnect = async () => {
   }
 };
 
-// Exportando usando CommonJS
+// Exporting CommonJS
 module.exports = dbConnect;
