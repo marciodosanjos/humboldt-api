@@ -5,7 +5,6 @@ const cors = require("cors");
 const adsGenderRouter = require("./routes/adsGenderRoute.js");
 
 //mongoose
-const AdsGenderData = require("./model/AdsGenderData.js");
 const dbConnect = require("./config/dbConnect");
 
 //db connect
