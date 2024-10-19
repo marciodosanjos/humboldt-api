@@ -1,4 +1,4 @@
-const AdsGenderData = require("../model/AdsGenderData.js");
+const AdsGenderData = require("../model/AdsGenderData");
 const moment = require("moment");
 
 const fetchAdsGenderData = async (req, res) => {
