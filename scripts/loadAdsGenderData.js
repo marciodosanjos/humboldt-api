@@ -1,5 +1,5 @@
 const dbConnect = require("../config/dbConnect");
-const AdsGenderData = require("../model/AdsGenderData.js");
+const AdsGenderData = require("../Model/AdsGenderData.js");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 const { JWT } = require("google-auth-library");
 const express = require("express");
