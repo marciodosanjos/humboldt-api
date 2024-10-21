@@ -13,7 +13,9 @@ const fetchAdsGenderData = async (req, res) => {
 
   // Converte a data de query para um objeto Date
   const startDate = req.query.startDate ? parseDate(req.query.startDate) : null;
-  const endDate = req.query.endDate ? parseDate(req.query.endDate) : null;
+  const endDate = req.query.endDate
+    ? moment(req.query.endDate, "DD-MM-YYYY").endOf("day").toDate()
+    : null;
 
   // Construção da query para MongoDB
   const query = {};
@@ -24,7 +26,10 @@ const fetchAdsGenderData = async (req, res) => {
   }
 
   try {
-    // Busca os dados baseados na query de data
+    // Conta o número total de documentos que correspondem à query (sem paginação)
+    const totalItems = await AdsGenderData.countDocuments(query);
+
+    // Busca os dados baseados na query de data com paginação
     const data = await AdsGenderData.find(query).skip(offset).limit(limit);
 
     const stats = await AdsGenderData.aggregate([
@@ -40,12 +45,15 @@ const fetchAdsGenderData = async (req, res) => {
       },
     ]);
 
+    // Calcula o número total de páginas
+    const totalPages = Math.ceil(totalItems / limit);
+
     // Retorna os dados e informações adicionais
     res.json({
       page,
       limit,
-      totalItems: data.length,
-      totalPages: Math.ceil(data.length / limit),
+      totalItems,
+      totalPages,
       stats,
       startDate,
       endDate,
