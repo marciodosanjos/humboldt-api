@@ -3,7 +3,7 @@ const moment = require("moment");
 
 const fetchAdsGenderData = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
+  const limit = parseInt(req.query.limit) || 1000;
   const offset = (page - 1) * limit;
 
   // Função para converter a data recebida em um objeto Date
@@ -32,6 +32,46 @@ const fetchAdsGenderData = async (req, res) => {
     // Busca os dados baseados na query de data com paginação
     const data = await AdsGenderData.find(query).skip(offset).limit(limit);
 
+    const generateAggregatedData = () => {
+      let aggregatedData = [];
+
+      data.forEach((item) => {
+        const year = item.date_start.getFullYear();
+        const month = item.date_start.getMonth();
+
+        let yearData = aggregatedData.find((entry) => entry.year === year);
+
+        if (!yearData) {
+          // Se o ano ainda não existir, cria uma nova entrada para o ano
+          yearData = { year, months: [] };
+          aggregatedData.push(yearData);
+        }
+
+        // Encontrando ou criando o mês dentro do ano
+        let monthData = yearData.months.find((entry) => entry.month === month);
+
+        if (!monthData) {
+          // Se o mês ainda não existir, cria uma nova entrada para o mês
+          monthData = {
+            month,
+            data: {
+              reach: 0,
+              impressions: 0,
+            },
+          };
+
+          yearData.months.push(monthData);
+        }
+
+        monthData.data.reach += item.reach;
+        monthData.data.impressions += item.impressions;
+      });
+
+      return aggregatedData;
+    };
+
+    let aggregatedData = generateAggregatedData();
+
     const stats = await AdsGenderData.aggregate([
       {
         $match: query,
@@ -57,7 +97,7 @@ const fetchAdsGenderData = async (req, res) => {
       stats,
       startDate,
       endDate,
-      data,
+      aggregatedData,
     });
   } catch (error) {
     console.error(error);
